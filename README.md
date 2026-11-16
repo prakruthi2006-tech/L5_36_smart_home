@@ -1,55 +1,60 @@
-# Lab 5: Static Code Analysis — Smart Home Device Controller
+# Lab 5: Static Code Analysis - Smart Home Device Controller
 
-**Your file:** `smart_home.py`
+**Name:** [Prakruthi.NK]
+**SRN:** [PES2UG24AM118]
+**Section:** [5B]
 
-Follow the lab handout for the full instructions.
+## About
 
-## About the program
+A small Python controller for smart home devices. It adds devices to rooms, switches them on and off, sets the thermostat within a safe range (16-30), lists devices by room, reports power use and saves the home state to `home_state.json`.
 
-A controller for smart home devices. It adds devices to rooms, switches them on and off, sets the thermostat within a safe range, lists devices by room, reports power use and saves the home state to home_state.json.
+This lab uses static code analysis. The starting code worked but had quality, style and security problems. I found them with Pylint, Flake8 and Bandit, documented them, and fixed them.
 
-The code works, but only just. It has quality, style and security problems of the kind Pylint, Flake8 and Bandit are built to find.
+## How to run
 
-## What to do
+```
+python smart_home.py
+```
 
-1. **Run it first** and read the output carefully:
+Expected output includes `Light settings: {}` and `Hub address: 127.0.0.1:8080`.
 
-   ```
-   python smart_home.py
-   ```
+## Running the analysis tools
 
-   It runs a short demonstration and needs no input. Not every problem in this file is something a tool will flag, so pay attention to output that looks wrong. Look closely at the settings it prints for each device, and ask whether every device should really have them.
+```
+python -m pip install pylint bandit flake8
+python -m pylint smart_home.py
+python -m bandit -r smart_home.py
+python -m flake8 smart_home.py
+```
 
-2. **Install the tools:**
+## Results
 
-   ```
-   python -m pip install pylint bandit flake8
-   ```
+| | Before | After |
+|---|---|---|
+| Pylint | 4.80/10 | 10.00/10 |
+| Bandit | 4 issues (1 High, 1 Medium, 2 Low) | 0 |
+| Flake8 | 4 issues | 0 |
 
-3. **Run the analysis and save the reports:**
+## Main fixes
 
-   ```
-   python -m pylint smart_home.py > pylint_report.txt
-   python -m bandit -r smart_home.py > bandit_report.txt
-   python -m flake8 smart_home.py > flake8_report.txt
-   ```
+- **Shared settings bug:** `settings={}` was a mutable default argument, so every device shared one dictionary and the thermostat's temperature appeared on the light. Each device now gets its own copy.
+- **Command injection:** `run_scene` used `shell=True` with string concatenation. It now uses an argument list and rejects scene names containing a path.
+- **Open network bind:** the hub bound to `0.0.0.0`; it now binds to `127.0.0.1`.
+- **Hardcoded password:** the unused `HUB_PASSWORD` was removed.
+- **Robustness:** `set_temperature` no longer crashes on unknown devices, `toggle_device` returns consistently, and `main()` runs only under `if __name__ == "__main__"`.
+- **Style:** snake_case names, docstrings, `encoding="utf-8"` and PEP 8 formatting.
 
-4. **Document the issues** in `issues.md` using this table (at least 4 rows, high and medium severity first):
+## Files
 
-   | Issue | Type | Line(s) | Description | Fix Approach |
-   |-------|------|---------|-------------|--------------|
-   | ...   | ...  | ...     | ...         | ...          |
+| File | Purpose |
+|---|---|
+| `smart_home.py` | Cleaned controller |
+| `issues.md` | Issues found, with line numbers and fixes |
+| `reflection.md` | Reflection on what the tools found and missed |
+| `pylint_report.txt`, `bandit_report.txt`, `flake8_report.txt` | Reports on the original code |
+| `pylint_report_after.txt`, `bandit_report_after.txt`, `flake8_report_after.txt` | Reports on the fixed code |
+| `home_state.json` | State file written when the program runs |
 
-5. **Fix the code.** Fix at least 4 of the issues you documented, then rerun all three tools to confirm they are gone. Repeat until you are satisfied. The program should still do its job when you are done.
+## Key takeaway
 
-6. **Reflect.** Answer the four reflection questions from the handout in `reflection.md`.
-
-## Deliverables
-
-- `smart_home.py`: your cleaned version, with at least 4 issues fixed.
-- `issues.md`: the completed issue table.
-- `reflection.md`: your answers to the reflection questions.
-
-**Target:** aim for a Pylint score above 9.5 on your final file. A perfect 10.00/10 is very good.
-
-Be ready to explain the bugs you found and how you fixed them. You may be called on to present.
+The tools found most of the problems, but not all of them. The shared-settings bug showed up only by reading the program's output, so a clean report is not proof that the code is correct.
